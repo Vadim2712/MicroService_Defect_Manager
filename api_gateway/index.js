@@ -53,8 +53,8 @@ const ordersCircuit = new CircuitBreaker(async (url, options = {}) => {
 }, circuitOptions);
 
 // Fallback functions
-usersCircuit.fallback(() => ({error: 'Users service temporarily unavailable'}));
-ordersCircuit.fallback(() => ({error: 'Orders service temporarily unavailable'}));
+usersCircuit.fallback(() => ({ error: 'Users service temporarily unavailable' }));
+ordersCircuit.fallback(() => ({ error: 'Orders service temporarily unavailable' }));
 
 // Routes with Circuit Breaker
 app.get('/users/:userId', async (req, res) => {
@@ -66,7 +66,7 @@ app.get('/users/:userId', async (req, res) => {
             res.json(user);
         }
     } catch (error) {
-        res.status(500).json({error: 'Internal server error'});
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -78,7 +78,7 @@ app.post('/users', async (req, res) => {
         });
         res.status(201).json(user);
     } catch (error) {
-        res.status(500).json({error: 'Internal server error'});
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -87,7 +87,7 @@ app.get('/users', async (req, res) => {
         const users = await usersCircuit.fire(`${USERS_SERVICE_URL}/users`);
         res.json(users);
     } catch (error) {
-        res.status(500).json({error: 'Internal server error'});
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -98,7 +98,7 @@ app.delete('/users/:userId', async (req, res) => {
         });
         res.json(result);
     } catch (error) {
-        res.status(500).json({error: 'Internal server error'});
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -110,7 +110,7 @@ app.put('/users/:userId', async (req, res) => {
         });
         res.json(user);
     } catch (error) {
-        res.status(500).json({error: 'Internal server error'});
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -123,7 +123,7 @@ app.get('/orders/:orderId', async (req, res) => {
             res.json(order);
         }
     } catch (error) {
-        res.status(500).json({error: 'Internal server error'});
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -135,7 +135,7 @@ app.post('/orders', async (req, res) => {
         });
         res.status(201).json(order);
     } catch (error) {
-        res.status(500).json({error: 'Internal server error'});
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -144,7 +144,7 @@ app.get('/orders', async (req, res) => {
         const orders = await ordersCircuit.fire(`${ORDERS_SERVICE_URL}/orders`);
         res.json(orders);
     } catch (error) {
-        res.status(500).json({error: 'Internal server error'});
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -155,7 +155,7 @@ app.delete('/orders/:orderId', async (req, res) => {
         });
         res.json(result);
     } catch (error) {
-        res.status(500).json({error: 'Internal server error'});
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -167,7 +167,7 @@ app.put('/orders/:orderId', async (req, res) => {
         });
         res.json(order);
     } catch (error) {
-        res.status(500).json({error: 'Internal server error'});
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -176,7 +176,7 @@ app.get('/orders/status', async (req, res) => {
         const status = await ordersCircuit.fire(`${ORDERS_SERVICE_URL}/orders/status`);
         res.json(status);
     } catch (error) {
-        res.status(500).json({error: 'Internal server error'});
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -185,7 +185,7 @@ app.get('/orders/health', async (req, res) => {
         const health = await ordersCircuit.fire(`${ORDERS_SERVICE_URL}/orders/health`);
         res.json(health);
     } catch (error) {
-        res.status(500).json({error: 'Internal server error'});
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -215,7 +215,7 @@ app.get('/users/:userId/details', async (req, res) => {
             orders: userOrders
         });
     } catch (error) {
-        res.status(500).json({error: 'Internal server error'});
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -237,7 +237,7 @@ app.get('/health', (req, res) => {
 });
 
 app.get('/status', (req, res) => {
-    res.json({status: 'API Gateway is running'});
+    res.json({ status: 'API Gateway is running' });
 });
 
 // Start server

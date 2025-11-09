@@ -10,6 +10,8 @@ services:
 
   service_users:
     build: service_users
+    ports:
+      - "3001:3001"
     environment:
       - NODE_ENV=production
     networks:
@@ -21,6 +23,25 @@ services:
       - NODE_ENV=production
     networks:
       - app-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres_systemcontrol
+    restart: always
+    environment:
+      POSTGRES_USER: SysAdminMicroServ
+      POSTGRES_PASSWORD: 12345678
+    ports:
+      - 5432:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+
 
 networks:
   app-network:

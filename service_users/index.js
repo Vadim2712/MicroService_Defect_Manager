@@ -3,7 +3,7 @@ import dotenv from 'dotenv'
 import pino from 'pino'
 import { v4 as uuid } from 'uuid'
 import { z } from 'zod'
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 
 dotenv.config()
