@@ -11,8 +11,8 @@ app.use(cors());
 app.use(express.json());
 
 // Service URLs
-const USERS_SERVICE_URL = 'http://service_users:8000';
-const ORDERS_SERVICE_URL = 'http://service_orders:8000';
+const USERS_SERVICE_URL = process.env.USERS_SERVICE_URL || 'http://service_users:3001';
+const ORDERS_SERVICE_URL = process.env.ORDERS_SERVICE_URL || 'http://service_orders:3002';
 
 // Circuit Breaker configuration
 const circuitOptions = {

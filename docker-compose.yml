@@ -5,6 +5,8 @@ services:
       - "8000:8000"
     environment:
       - NODE_ENV=production
+      - USERS_SERVICE_URL=http://service_users:3001
+      - ORDERS_SERVICE_URL=http://service_orders:3002
     networks:
       - app-network
 
@@ -14,13 +16,18 @@ services:
       - "3001:3001"
     environment:
       - NODE_ENV=production
+      - PORT=3001
+      - JWT_SECRET=supersecretkey
     networks:
       - app-network
 
   service_orders:
     build: service_orders
+    ports:
+      - "3002:3002"
     environment:
       - NODE_ENV=production
+      - PORT=3002
     networks:
       - app-network
 
@@ -35,7 +42,6 @@ services:
       - 5432:5432
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./initdb:/docker-entrypoint-initdb.d
     networks:
       - app-network
 
