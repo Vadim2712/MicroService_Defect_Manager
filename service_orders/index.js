@@ -1,96 +1,59 @@
-const express = require('express');
-const cors = require('cors');
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import { v4 as uuidv4 } from 'uuid';
+import pinoHttp from 'pino-http';
+import logger from './utils/logger.js';
+import { sendError } from './utils/response.js';
+
+import orderRoutes from './routes/order.routes.js';
+
+dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 3002;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Имитация базы данных в памяти (LocalStorage)
-let fakeOrdersDb = {};
-let currentId = 1;
-
-// Routes
-app.get('/orders/status', (req, res) => {
-    res.json({status: 'Orders service is running'});
-});
-
-app.get('/orders/health', (req, res) => {
-    res.json({
-        status: 'OK',
-        service: 'Orders Service',
-        timestamp: new Date().toISOString()
-    });
-});
-
-app.get('/orders/:orderId', (req, res) => {
-    const orderId = parseInt(req.params.orderId);
-    const order = fakeOrdersDb[orderId];
-
-    if (!order) {
-        return res.status(404).json({error: 'Order not found'});
+app.use(pinoHttp({
+    logger,
+    genReqId: (req, res) => {
+        const existingId = req.id || req.headers["x-request-id"];
+        if (existingId) return existingId;
+        const id = uuidv4();
+        res.setHeader('X-Request-Id', id);
+        return id;
+    },
+    customLogLevel: (req, res, err) => {
+        if (res.statusCode >= 400 && res.statusCode < 500) return 'warn';
+        if (res.statusCode >= 500 || err) return 'error';
+        if (res.statusCode >= 300 && res.statusCode < 400) return 'silent';
+        return 'info';
+    },
+    customSuccessMessage: (req, res) => {
+        if (res.statusCode < 400) {
+            return `request completed ${req.method} ${req.url} ${res.statusCode}`;
+        }
+        return `request failed ${req.method} ${req.url} ${res.statusCode}`;
     }
+}));
 
-    res.json(order);
+app.use('/api/v1/orders', orderRoutes);
+
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'UP', service: 'service_orders' });
 });
 
-app.get('/orders', (req, res) => {
-    let orders = Object.values(fakeOrdersDb);
-
-    // Добавляем фильтрацию по userId если передан параметр
-    if (req.query.userId) {
-        const userId = parseInt(req.query.userId);
-        orders = orders.filter(order => order.userId === userId);
-    }
-
-    res.json(orders);
+app.use((req, res, next) => {
+    sendError(res, 404, 'not_found', `Cannot ${req.method} ${req.path}`);
 });
 
-app.post('/orders', (req, res) => {
-    const orderData = req.body;
-    const orderId = currentId++;
-
-    const newOrder = {
-        id: orderId,
-        ...orderData
-    };
-
-    fakeOrdersDb[orderId] = newOrder;
-    res.status(201).json(newOrder);
+app.use((err, req, res, next) => {
+    req.log.error({ err, stack: err.stack }, 'Unhandled error');
+    sendError(res, 500, 'internal_error', 'Internal server error');
 });
 
-app.put('/orders/:orderId', (req, res) => {
-    const orderId = parseInt(req.params.orderId);
-    const orderData = req.body;
-
-    if (!fakeOrdersDb[orderId]) {
-        return res.status(404).json({error: 'Order not found'});
-    }
-
-    fakeOrdersDb[orderId] = {
-        id: orderId,
-        ...orderData
-    };
-
-    res.json(fakeOrdersDb[orderId]);
-});
-
-app.delete('/orders/:orderId', (req, res) => {
-    const orderId = parseInt(req.params.orderId);
-
-    if (!fakeOrdersDb[orderId]) {
-        return res.status(404).json({error: 'Order not found'});
-    }
-
-    const deletedOrder = fakeOrdersDb[orderId];
-    delete fakeOrdersDb[orderId];
-
-    res.json({message: 'Order deleted', deletedOrder});
-});
-
-// Start server
 app.listen(PORT, () => {
-    console.log(`Orders service running on port ${PORT}`);
+    logger.info(`Orders service running on port ${PORT}`);
 });
