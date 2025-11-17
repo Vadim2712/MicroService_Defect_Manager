@@ -56,6 +56,10 @@ app.use((err, req, res, next) => {
     sendError(res, 500, 'internal_error', 'Internal server error');
 });
 
-app.listen(PORT, () => {
-    logger.info(`User service running on port ${PORT}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+    app.listen(PORT, () => {
+        logger.info(`User service running on port ${PORT}`);
+    });
+}
+
+export default app;

@@ -10,11 +10,11 @@ export const register = async (req, res) => {
     try {
         const newUser = await UserService.registerUser(email, password, name);
         logger.info({ requestId, userId: newUser.id, email }, 'Register successful');
-        sendSuccess(res, 201, newUser);
+        sendSuccess(res, 201, { message: 'User registered successfully', user: newUser });
     } catch (error) {
         logger.error({ requestId, error: error.message }, 'Register controller error');
         if (error.message === 'user_exists') {
-            return sendError(res, 400, 'user_exists', 'User with this email already exists');
+            return sendError(res, 409, 'conflict', 'User with this email already exists');
         }
         sendError(res, 500, 'internal_error', 'Internal server error');
     }
