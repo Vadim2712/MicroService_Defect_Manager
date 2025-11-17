@@ -1,5 +1,5 @@
 import express from 'express';
-import { createNewOrder, getOrderById, listMyOrders, updateStatus } from '../controllers/order.controller.js';
+import { createNewOrder, getOrderById, listMyOrders, updateStatus, cancelOrder } from '../controllers/order.controller.js';
 import { protect, authorize } from '../middleware/auth.middleware.js';
 import { validate } from '../middleware/validate.middleware.js';
 import { createOrderSchema, updateStatusSchema } from '../validations/order.validation.js';
@@ -21,8 +21,7 @@ router.patch(
 
 router.patch(
     '/:id/cancel',
-    validate(updateStatusSchema),
-    updateStatus
+    cancelOrder
 );
 
 export default router;

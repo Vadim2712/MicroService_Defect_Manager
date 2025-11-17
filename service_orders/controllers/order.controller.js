@@ -91,16 +91,45 @@ export const updateStatus = async (req, res) => {
             return sendError(res, 404, 'not_found', 'Order not found');
         }
 
-        if (status === 'cancelled' && order.user_id !== userId) {
-            logger.warn({ requestId, userId, orderId: id, ownerId: order.user_id }, 'Update status (cancel) failed: Forbidden');
-            return sendError(res, 403, 'forbidden', 'Only the owner can cancel this order');
-        }
-
         const updatedOrder = await updateOrderStatus(id, status);
         logger.info({ requestId, orderId: id }, 'Update status successful');
         sendSuccess(res, 200, updatedOrder);
     } catch (error) {
-        logger.error({ requestId, error: error.message }, 'Update status controller error');
-        sendError(res, 500, 'internal_error', 'Internal server error');
-    }
-};
+                logger.error({ requestId, error: error.message }, 'Update status controller error');
+                sendError(res, 500, 'internal_error', 'Internal server error');
+            }
+        };
+        
+        export const cancelOrder = async (req, res) => {
+            const { id } = req.params;
+            const requestId = req.id;
+            const userId = req.user.id;
+        
+            logger.info({ requestId, orderId: id, userId }, 'Cancel order attempt');
+        
+            try {
+                const order = await findOrderById(id);
+                if (!order) {
+                    logger.warn({ requestId, orderId: id }, 'Cancel order failed: Not found');
+                    return sendError(res, 404, 'not_found', 'Order not found');
+                }
+        
+                if (order.user_id !== userId) {
+                    logger.warn({ requestId, userId, orderId: id, ownerId: order.user_id }, 'Cancel order failed: Forbidden');
+                    return sendError(res, 403, 'forbidden', 'Only the owner can cancel this order');
+                }
+        
+                if (order.status === 'completed' || order.status === 'cancelled') {
+                    logger.warn({ requestId, orderId: id, status: order.status }, 'Cancel order failed: Order already processed');
+                    return sendError(res, 400, 'bad_request', `Cannot cancel an order that is already ${order.status}`);
+                }
+        
+                const updatedOrder = await updateOrderStatus(id, 'cancelled');
+                logger.info({ requestId, orderId: id }, 'Cancel order successful');
+                sendSuccess(res, 200, updatedOrder);
+            } catch (error) {
+                logger.error({ requestId, error: error.message }, 'Cancel order controller error');
+                sendError(res, 500, 'internal_error', 'Internal server error');
+            }
+        };
+        
