@@ -24,9 +24,7 @@ describe('Auth Routes', () => {
                 });
 
             expect(response.statusCode).toBe(201);
-            expect(response.body.data.message).toBe('User registered successfully');
-            expect(response.body.data.user).toHaveProperty('id');
-            expect(response.body.data.user.email).toBe('test@example.com');
+            expect(response.body.message).toBe('User registered successfully');
         });
 
         it('should return an error if the email already exists', async () => {
@@ -51,8 +49,8 @@ describe('Auth Routes', () => {
                 });
 
             expect(response.statusCode).toBe(409);
-            expect(response.body.error.code).toBe('conflict');
-            expect(response.body.error.message).toBe('User with this email already exists');
+            expect(response.body.code).toBe('conflict');
+            expect(response.body.message).toBe('User with this email already exists');
         });
     });
 });

@@ -4,8 +4,10 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
+    "prestart": "npm install",
     "start": "node index.js",
-    "dev": "nodemon index.js",
+    "start:dev": "nodemon index.js",
+    "start:prod": "node index.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "dependencies": {

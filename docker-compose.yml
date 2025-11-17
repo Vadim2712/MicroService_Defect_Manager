@@ -3,11 +3,10 @@ version: '3.8'
 services:
   api_gateway:
     build: ./api_gateway
-    container_name: api_gateway
-    ports:
-      - "${GATEWAY_PORT}:${GATEWAY_PORT}"
+    env_file:
+      - .env
+      - .env.${NODE_ENV}
     environment:
-      - NODE_ENV=production
       - PORT=${GATEWAY_PORT}
       - USERS_SERVICE_URL=http://service_users:${USERS_PORT}
       - ORDERS_SERVICE_URL=http://service_orders:${ORDERS_PORT}
@@ -20,11 +19,10 @@ services:
 
   service_users:
     build: ./service_users
-    container_name: service_users
-    ports:
-      - "${USERS_PORT}:${USERS_PORT}"
+    env_file:
+      - .env
+      - .env.${NODE_ENV}
     environment:
-      - NODE_ENV=production
       - PORT=${USERS_PORT}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=1h
@@ -40,11 +38,10 @@ services:
 
   service_orders:
     build: ./service_orders
-    container_name: service_orders
-    ports:
-      - "${ORDERS_PORT}:${ORDERS_PORT}"
+    env_file:
+      - .env
+      - .env.${NODE_ENV}
     environment:
-      - NODE_ENV=production
       - PORT=${ORDERS_PORT}
       - JWT_SECRET=${JWT_SECRET}
       - DB_HOST=postgres
