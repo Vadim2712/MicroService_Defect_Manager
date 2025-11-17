@@ -13,23 +13,28 @@ export const findOrderById = async (id) => {
     return res.rows[0];
 };
 
-export const findOrdersByUserId = async (userId, limit, offset, sortBy, sortOrder) => {
+export const findOrdersByUserId = async (userId, userRoles, limit, offset, sortBy, sortOrder) => {
     const validSortColumns = ['created_at', 'status', 'total_sum'];
     const validSortOrders = ['ASC', 'DESC'];
 
     const sort = validSortColumns.includes(sortBy) ? sortBy : 'created_at';
     const order = validSortOrders.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
 
-    const query = `
+    const isAdmin = userRoles.includes('admin');
+
+    let query = `
     SELECT * FROM orders 
-    WHERE user_id = $1 
+    ${isAdmin ? '' : 'WHERE user_id = $1'}
     ORDER BY ${sort} ${order} 
-    LIMIT $2 OFFSET $3
+    LIMIT $${isAdmin ? '1' : '2'} OFFSET $${isAdmin ? '2' : '3'}
   `;
 
-    const res = await pool.query(query, [userId, limit, offset]);
+    const queryParams = isAdmin ? [limit, offset] : [userId, limit, offset];
+    const res = await pool.query(query, queryParams);
 
-    const totalRes = await pool.query('SELECT COUNT(*) FROM orders WHERE user_id = $1', [userId]);
+    const totalQuery = `SELECT COUNT(*) FROM orders ${isAdmin ? '' : 'WHERE user_id = $1'}`;
+    const totalParams = isAdmin ? [] : [userId];
+    const totalRes = await pool.query(totalQuery, totalParams);
     const total = parseInt(totalRes.rows[0].count, 10);
 
     return { orders: res.rows, total };

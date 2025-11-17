@@ -48,14 +48,15 @@ export const getOrderById = async (req, res) => {
 
 export const listMyOrders = async (req, res) => {
     const userId = req.user.id;
+    const userRoles = req.user.roles || [];
     const { page = 1, limit = 10, sort_by = 'created_at', sort_order = 'desc' } = req.query;
     const offset = (page - 1) * limit;
     const requestId = req.id;
 
-    logger.info({ requestId, userId, page, limit }, 'List my orders attempt');
+    logger.info({ requestId, userId, userRoles, page, limit }, 'List my orders attempt');
 
     try {
-        const { orders, total } = await findOrdersByUserId(userId, limit, offset, sort_by, sort_order);
+        const { orders, total } = await findOrdersByUserId(userId, userRoles, limit, offset, sort_by, sort_order);
 
         const totalPages = Math.ceil(total / limit);
 
