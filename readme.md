@@ -1,88 +1,88 @@
-# Microservice Defect Manager
+# Менеджер дефектов (микросервисы)
 
-This is a microservices-based application for managing defects, built with Node.js, Express, and PostgreSQL. The entire application is containerized using Docker.
+Это приложение для управления дефектами, построенное на основе микросервисной архитектуры с использованием Node.js, Express и PostgreSQL. Все приложение контейнеризовано с помощью Docker.
 
-## Technologies
+## Технологии
 
-*   **Backend:** Node.js, Express.js
-*   **Database:** PostgreSQL
-*   **Containerization:** Docker, Docker Compose
-*   **API Gateway:** Custom-built with `http-proxy-middleware`
-*   **Authentication:** JWT (JSON Web Tokens)
-*   **Validation:** Zod
-*   **Logging:** Pino (with `pino-http`)
+*   **Бэкенд:** Node.js, Express.js
+*   **База данных:** PostgreSQL
+*   **Контейнеризация:** Docker, Docker Compose
+*   **API-шлюз:** Собственная разработка на `http-proxy-middleware`
+*   **Аутентификация:** JWT (JSON Web Tokens)
+*   **Валидация:** Zod
+*   **Логирование:** Pino (с `pino-http`)
 
-## Architecture
+## Архитектура
 
-The application follows a microservice architecture:
+Приложение следует микросервисной архитектуре:
 
-*   **`api_gateway`:** The single entry point for all client requests. It handles routing, authentication, rate limiting, and CORS. It forwards requests to the appropriate downstream service.
-*   **`service_users`:** Manages all user-related operations, including registration, login, profile management, and admin-level user listing.
-*   **`service_orders`:** Manages all order-related operations, such as creation, retrieval, status updates, and cancellation.
-*   **`postgres`:** The central database for both services.
-*   **`initdb/init.sql`**: The single source of truth for the database schema.
+*   **`api_gateway`:** Единая точка входа для всех клиентских запросов. Он обрабатывает маршрутизацию, аутентификацию, ограничение скорости запросов и CORS. Перенаправляет запросы в соответствующий нижестоящий сервис.
+*   **`service_users`:** Управляет всеми операциями, связанными с пользователями, включая регистрацию, вход, управление профилем и получение списка пользователей на уровне администратора.
+*   **`service_orders`:** Управляет всеми операциями, связанными с заказами, такими как создание, получение, обновление статуса и отмена.
+*   **`postgres`:** Центральная база данных для обоих сервисов.
+*   **`initdb/init.sql`**: Единственный источник правды для схемы базы данных.
 
-## Getting Started
+## Начало работы
 
-To get started with this project, you need to have Docker and Docker Compose installed on your machine.
+Для начала работы с этим проектом вам необходимо установить Docker и Docker Compose на вашем компьютере.
 
-## Building and Running
+## Сборка и запуск
 
-1.  **Environment Variables:**
+1.  **Переменные окружения:**
 
-    This project uses environment-specific `.env` files. You will need to create `.env.development` and `.env.production` files. You can start by copying the `.env.example` file:
+    Этот проект использует файлы `.env` для разных окружений. Вам нужно будет создать файлы `.env.development` и `.env.production`. Вы можете начать, скопировав файл `.env.example`:
 
     ```bash
     cp .env.example .env.development
     cp .env.example .env.production
     ```
 
-    (Fill in the `.env` files with your settings).
+    (Заполните файлы `.env` вашими настройками).
 
-2.  **Running the Application:**
+2.  **Запуск приложения:**
 
-    To run the application in a development environment, use:
+    Для запуска приложения в среде разработки используйте:
 
     ```bash
     NODE_ENV=development docker-compose up --build -d
     ```
 
-    To run the application in a production environment, use:
+    Для запуска приложения в производственной среде используйте:
 
     ```bash
     NODE_ENV=production docker-compose up --build -d
     ```
 
-3.  **Stopping the Application:**
+3.  **Остановка приложения:**
 
     ```bash
     docker-compose down
     ```
 
-## API Endpoints
+## API Эндпоинты
 
-The API is versioned under `/api/v1`.
+API версионируется и доступно по пути `/api/v1`.
 
-### Auth (via `service_users`)
+### Аутентификация (через `service_users`)
 
-*   `POST /auth/register`: Register a new user.
-*   `POST /auth/login`: Log in a user and get a JWT.
+*   `POST /auth/register`: Регистрация нового пользователя.
+*   `POST /auth/login`: Вход пользователя и получение JWT.
 
-### Users (via `service_users`)
+### Пользователи (через `service_users`)
 
-*   `GET /users/profile`: Get the current user's profile.
-*   `PUT /users/profile`: Update the current user's profile.
+*   `GET /users/profile`: Получение профиля текущего пользователя.
+*   `PUT /users/profile`: Обновление профиля текущего пользователя.
 
-### Admin (via `service_users`)
+### Админ (через `service_users`)
 
-*   `GET /admin/users`: List all users (admin only).
-*   `GET /admin/users/:id`: Get user by ID (admin only).
-*   `PUT /admin/users/:id`: Update user by ID (admin only).
+*   `GET /admin/users`: Получение списка всех пользователей (только для администраторов).
+*   `GET /admin/users/:id`: Получение пользователя по ID (только для администраторов).
+*   `PUT /admin/users/:id`: Обновление пользователя по ID (только для администраторов).
 
-### Orders (via `service_orders`)
+### Заказы (через `service_orders`)
 
-*   `POST /orders`: Create a new order.
-*   `GET /orders`: Get a list of the current user's orders.
-*   `GET /orders/:id`: Get an order by its ID.
-*   `PATCH /orders/:id/status`: Update status (admin only).
-*   `PATCH /orders/:id/cancel`: Cancel an order (owner only).
+*   `POST /orders`: Создание нового заказа.
+*   `GET /orders`: Получение списка заказов текущего пользователя.
+*   `GET /orders/:id`: Получение заказа по его ID.
+*   `PATCH /orders/:id/status`: Обновление статуса (только для администраторов).
+*   `PATCH /orders/:id/cancel`: Отмена заказа (только владелец).
