@@ -11,6 +11,7 @@ export const createNewOrder = async (req, res) => {
 
     try {
         const newOrder = await createOrder(userId, items, total_sum);
+        logger.info({ requestId, orderId: newOrder.id }, 'Доменное событие: order_created');
         logger.info({ requestId, orderId: newOrder.id }, 'Order created successfully');
         sendSuccess(res, 201, newOrder);
     } catch (error) {
@@ -92,6 +93,7 @@ export const updateStatus = async (req, res) => {
         }
 
         const updatedOrder = await updateOrderStatus(id, status);
+        logger.info({ requestId, orderId: updatedOrder.id, status: updatedOrder.status }, 'Доменное событие: order_status_updated');
         logger.info({ requestId, orderId: id }, 'Update status successful');
         sendSuccess(res, 200, updatedOrder);
     } catch (error) {
@@ -125,6 +127,7 @@ export const updateStatus = async (req, res) => {
                 }
         
                 const updatedOrder = await updateOrderStatus(id, 'cancelled');
+                logger.info({ requestId, orderId: updatedOrder.id, status: updatedOrder.status }, 'Доменное событие: order_cancelled');
                 logger.info({ requestId, orderId: id }, 'Cancel order successful');
                 sendSuccess(res, 200, updatedOrder);
             } catch (error) {
