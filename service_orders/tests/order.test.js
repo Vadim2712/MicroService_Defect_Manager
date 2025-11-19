@@ -3,63 +3,41 @@ import app from '../index.js';
 import { pool } from '../db.js';
 import jwt from 'jsonwebtoken';
 
-// Mock the protect middleware to bypass the gateway
-jest.mock('../middleware/auth.middleware.js', () => ({
-    protect: (req, res, next) => {
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return res.status(401).json({ message: 'Unauthorized' });
-        }
-        const token = authHeader.split(' ')[1];
-        try {
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            req.user = decoded;
-            req.id = 'test-request-id';
-            next();
-        } catch (error) {
-            return res.status(401).json({ message: 'Invalid token' });
-        }
-    },
-    authorize: (roles) => (req, res, next) => {
-        if (roles.some(role => req.user.roles.includes(role))) {
-            next();
-        } else {
-            res.status(403).json({ message: 'Forbidden' });
-        }
-    }
-}));
+// Use a consistent, test-only secret
+const TEST_JWT_SECRET = 'a-very-secret-test-key-for-orders';
+process.env.JWT_SECRET = TEST_JWT_SECRET;
 
 describe('Order Routes', () => {
     let testUser, testAdmin, userToken, adminToken;
-
-    beforeAll(async () => {
-        // Clean up before starting
+    
+    // beforeEach: Clean database and set up fresh users for every test
+    beforeEach(async () => {
         await pool.query('DELETE FROM orders');
         await pool.query('DELETE FROM users');
 
-        // Create users
+        // Create a standard user
         const userRes = await pool.query(
-            `INSERT INTO users (email, password_hash, name, roles) 
+            `INSERT INTO users (email, password_hash, full_name, roles) 
              VALUES ('order-user@test.com', 'password', 'Order User', ARRAY['user']::VARCHAR[])
              RETURNING *`
         );
         testUser = userRes.rows[0];
 
+        // Create an admin user
         const adminRes = await pool.query(
-            `INSERT INTO users (email, password_hash, name, roles) 
+            `INSERT INTO users (email, password_hash, full_name, roles) 
              VALUES ('order-admin@test.com', 'password', 'Order Admin', ARRAY['user', 'admin']::VARCHAR[])
              RETURNING *`
         );
         testAdmin = adminRes.rows[0];
 
-        // Generate tokens
+        // Generate tokens for them
         userToken = jwt.sign({ id: testUser.id, roles: testUser.roles }, process.env.JWT_SECRET);
         adminToken = jwt.sign({ id: testAdmin.id, roles: testAdmin.roles }, process.env.JWT_SECRET);
     });
 
+    // afterAll: Clean up and close the connection
     afterAll(async () => {
-        await pool.query('DELETE FROM orders');
-        await pool.query('DELETE FROM users');
         await pool.end();
     });
 
@@ -71,7 +49,7 @@ describe('Order Routes', () => {
                 .set('Authorization', `Bearer ${userToken}`)
                 .send({
                     items: [{ product: 'Test Product', quantity: 2 }],
-                    total_sum: 99.99
+                    total_sum: 99.99,
                 });
 
             expect(res.statusCode).toBe(201);
@@ -85,12 +63,12 @@ describe('Order Routes', () => {
                 .post('/api/v1/orders')
                 .send({
                     items: [{ product: 'Test Product', quantity: 2 }],
-                    total_sum: 99.99
+                    total_sum: 99.99,
                 });
 
             expect(res.statusCode).toBe(401);
         });
-
+        
         it('should return 400 Bad Request for invalid order data', async () => {
             const res = await request(app)
                 .post('/api/v1/orders')
@@ -106,19 +84,18 @@ describe('Order Routes', () => {
     });
 
     describe('GET /api/v1/orders/:id', () => {
-        let orderId;
-
-        beforeAll(async () => {
-            const res = await pool.query(
-                `INSERT INTO orders (user_id, items, total_sum, status)
-                 VALUES ($1, $2, $3, 'created')
+        
+        it('should return the order if requested by the owner', async () => {
+            // 1. Create an order for the user
+            const orderRes = await pool.query(
+                `INSERT INTO orders (user_id, items, total_sum)
+                 VALUES ($1, $2, $3)
                  RETURNING id`,
                 [testUser.id, JSON.stringify([{ product: 'Belongs to User', quantity: 1 }]), 10.00]
             );
-            orderId = res.rows[0].id;
-        });
+            const orderId = orderRes.rows[0].id;
 
-        it('should return the order if requested by the owner', async () => {
+            // 2. Request it as the user
             const res = await request(app)
                 .get(`/api/v1/orders/${orderId}`)
                 .set('Authorization', `Bearer ${userToken}`);
@@ -128,6 +105,16 @@ describe('Order Routes', () => {
         });
 
         it('should return the order if requested by an admin', async () => {
+            // 1. Create an order for the user
+            const orderRes = await pool.query(
+                `INSERT INTO orders (user_id, items, total_sum)
+                 VALUES ($1, $2, $3)
+                 RETURNING id`,
+                [testUser.id, JSON.stringify([{ product: 'Belongs to User', quantity: 1 }]), 10.00]
+            );
+            const orderId = orderRes.rows[0].id;
+
+            // 2. Request it as an admin
             const res = await request(app)
                 .get(`/api/v1/orders/${orderId}`)
                 .set('Authorization', `Bearer ${adminToken}`);
@@ -137,18 +124,19 @@ describe('Order Routes', () => {
         });
 
         it('should return 403 Forbidden if requested by another user who is not an admin', async () => {
-            // Create a different user
-            const otherUserRes = await pool.query(
-                `INSERT INTO users (email, password_hash, name, roles) 
-                 VALUES ('other-user@test.com', 'password', 'Other User', ARRAY['user']::VARCHAR[])
-                 RETURNING *`
+            // 1. Create an order that belongs to the admin
+            const orderRes = await pool.query(
+                `INSERT INTO orders (user_id, items, total_sum)
+                 VALUES ($1, $2, $3)
+                 RETURNING id`,
+                [testAdmin.id, JSON.stringify([{ product: 'Belongs to Admin', quantity: 1 }]), 10.00]
             );
-            const otherUser = otherUserRes.rows[0];
-            const otherUserToken = jwt.sign({ id: otherUser.id, roles: otherUser.roles }, process.env.JWT_SECRET);
+            const orderId = orderRes.rows[0].id;
 
+            // 2. Try to access it as the regular user
             const res = await request(app)
                 .get(`/api/v1/orders/${orderId}`)
-                .set('Authorization', `Bearer ${otherUserToken}`);
+                .set('Authorization', `Bearer ${userToken}`);
 
             expect(res.statusCode).toBe(403);
         });
