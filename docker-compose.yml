@@ -1,79 +1,100 @@
 version: '3.8'
 
+networks:
+  microservices_network:
+    driver: bridge
+
 services:
-  api_gateway:
-    build: ./api_gateway
-    env_file:
-      - .env
-      - .env.${NODE_ENV}
+  postgres:
+    image: postgres:13
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+      - ./initdb:/docker-entrypoint-initdb.d
     environment:
-      - PORT=${GATEWAY_PORT}
-      - USERS_SERVICE_URL=http://service_users:${USERS_PORT}
-      - ORDERS_SERVICE_URL=http://service_orders:${ORDERS_PORT}
-      - JWT_SECRET=${JWT_SECRET}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=servicedb
+    ports:
+      - "${DB_PORT}:${DB_PORT}"
     networks:
-      - app-network
+      - microservices_network
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+    networks:
+      - microservices_network
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.22.0
+    ports:
+      - "5775:5775/udp"
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "5778:5778"
+      - "16686:16686"
+      - "14268:14268"
+      - "9411:9411"
+    networks:
+      - microservices_network
+
+  api_gateway:
+    build:
+      context: .
+      dockerfile: api_gateway/Dockerfile
+    ports:
+      - "${PORT}:${PORT}"
+    environment:
+      - PORT=${PORT}
+      - JWT_SECRET=${JWT_SECRET}
+      - USERS_SERVICE_URL=${USERS_SERVICE_URL}
+      - ORDERS_SERVICE_URL=${ORDERS_SERVICE_URL}
+      - JAEGER_ENDPOINT=${JAEGER_ENDPOINT}
+    networks:
+      - microservices_network
     depends_on:
       - service_users
       - service_orders
+      - jaeger
 
   service_users:
     build: ./service_users
-    env_file:
-      - .env
-      - .env.${NODE_ENV}
+    ports:
+      - "8001:8001"
     environment:
-      - PORT=${USERS_PORT}
+      - PORT=8001
       - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRES_IN=1h
-      - DB_HOST=postgres
-      - DB_PORT=${POSTGRES_PORT}
-      - DB_USER=${POSTGRES_USER}
-      - DB_PASSWORD=${POSTGRES_PASSWORD}
-      - DB_NAME=${POSTGRES_DB}
+      - DB_USER=${DB_USER}
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_PORT=${DB_PORT}
+      - JAEGER_ENDPOINT=${JAEGER_ENDPOINT}
     networks:
-      - app-network
+      - microservices_network
     depends_on:
       - postgres
+      - jaeger
 
   service_orders:
     build: ./service_orders
-    env_file:
-      - .env
-      - .env.${NODE_ENV}
+    ports:
+      - "8002:8002"
     environment:
-      - PORT=${ORDERS_PORT}
-      - JWT_SECRET=${JWT_SECRET}
-      - DB_HOST=postgres
-      - DB_PORT=${POSTGRES_PORT}
-      - DB_USER=${POSTGRES_USER}
-      - DB_PASSWORD=${POSTGRES_PASSWORD}
-      - DB_NAME=${POSTGRES_DB}
+      - PORT=8002
+      - DB_USER=${DB_USER}
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_PORT=${DB_PORT}
+      - JAEGER_ENDPOINT=${JAEGER_ENDPOINT}
     networks:
-      - app-network
+      - microservices_network
     depends_on:
       - postgres
-
-  postgres:
-    image: postgres:16-alpine
-    container_name: postgres_systemcontrol
-    restart: always
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-    ports:
-      - "${POSTGRES_PORT}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./initdb/init.sql:/docker-entrypoint-initdb.d/init.sql
-    networks:
-      - app-network
+      - jaeger
 
 volumes:
   postgres_data:
-
-
-networks:
-  app-network:
-    driver: bridge

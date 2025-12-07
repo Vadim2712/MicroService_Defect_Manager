@@ -2,10 +2,13 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY api_gateway/package*.json ./
 RUN npm install
 
-COPY . .
+COPY api_gateway/. .
+
+# Copy the docs directory
+COPY docs ./docs
 
 EXPOSE 8000
 
