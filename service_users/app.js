@@ -65,8 +65,8 @@ app.post('/register', async (req, res) => {
     req.log.info({ body: req.body }, 'Запрос на регистрацию');
     const validation = registerSchema.safeParse(req.body);
     if (!validation.success) {
-        const errorMessage = validation.error.errors.map(e => e.message).join(', ');
-        req.log.error({ errors: validation.error.errors }, 'Ошибка валидации при регистрации');
+        const errorMessage = validation.error.issues.map(e => e.message).join(', ');
+        req.log.error({ errors: validation.error.issues }, 'Ошибка валидации при регистрации');
         return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: errorMessage } });
     }
 
@@ -106,8 +106,8 @@ app.post('/login', async (req, res) => {
     req.log.info({ body: req.body }, 'Запрос на вход');
     const validation = loginSchema.safeParse(req.body);
     if (!validation.success) {
-        const errorMessage = validation.error.errors.map(e => e.message).join(', ');
-        req.log.error({ errors: validation.error.errors }, 'Ошибка валидации при входе');
+        const errorMessage = validation.error.issues.map(e => e.message).join(', ');
+        req.log.error({ errors: validation.error.issues }, 'Ошибка валидации при входе');
         return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: errorMessage } });
     }
 
@@ -144,8 +144,8 @@ app.patch('/me', authMiddleware, async (req, res) => {
     req.log.info({ body: req.body }, 'Запрос на обновление профиля');
     const validation = updateUserSchema.safeParse(req.body);
     if (!validation.success) {
-        const errorMessage = validation.error.errors.map(e => e.message).join(', ');
-        req.log.error({ errors: validation.error.errors }, 'Ошибка валидации при обновлении профиля');
+        const errorMessage = validation.error.issues.map(e => e.message).join(', ');
+        req.log.error({ errors: validation.error.issues }, 'Ошибка валидации при обновлении профиля');
         return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: errorMessage } });
     }
 

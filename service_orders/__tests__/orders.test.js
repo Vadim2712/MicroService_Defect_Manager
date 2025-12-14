@@ -11,22 +11,22 @@ let app;
 let testOrder;
 
 beforeAll((done) => {
-    const dbConfig = {
-        user: process.env.DB_USER || 'user',
-        host: 'localhost', // Connect to localhost for tests
-        database: 'servicedb', // Hardcode for consistency
-        password: process.env.DB_PASSWORD || 'password',
-        port: process.env.DB_PORT || 5432,
-    };
+  const dbConfig = {
+    user: process.env.DB_USER || 'user',
+    host: 'localhost', // Connect to localhost for tests
+    database: process.env.DB_NAME || 'app_db',
+    password: process.env.DB_PASSWORD || 'password',
+    port: process.env.DB_PORT || 5432,
+  };
 
-    testDb = new Database(dbConfig);
+  testDb = new Database(dbConfig);
 
-    app = createApp(testDb);
+  app = createApp(testDb);
 
-    server = app.listen(0, () => { // Listen on a random available port
-        console.log(`Test server running on port ${server.address().port}`);
-        done();
-    });
+  server = app.listen(0, () => { // Listen on a random available port
+    console.log(`Test server running on port ${server.address().port}`);
+    done();
+  });
 });
 
 // Clean up after all tests are done
@@ -41,7 +41,7 @@ describe('Order Service API', () => {
     // Clean up existing test data, respecting foreign key constraints
     await testDb.query('DELETE FROM orders');
     await testDb.query('DELETE FROM users');
-    
+
     // Create users for testing
     await testDb.query('INSERT INTO users (id, name, email, password, roles) VALUES ($1, $2, $3, $4, $5)', [testUserId, 'Test User', 'test@test.com', 'password', '{user}']);
     await testDb.query('INSERT INTO users (id, name, email, password, roles) VALUES ($1, $2, $3, $4, $5)', [otherUserId, 'Other User', 'other@test.com', 'password', '{user}']);
@@ -55,12 +55,12 @@ describe('Order Service API', () => {
       totalAmount: 100,
     };
     const { rows } = await testDb.query(
-        'INSERT INTO orders (id, "userId", items, status, "totalAmount") VALUES ($1, $2, $3, $4, $5) RETURNING *',
-        [orderData.id, orderData.userId, JSON.stringify(orderData.items), orderData.status, orderData.totalAmount]
+      'INSERT INTO orders (id, "userId", items, status, "totalAmount") VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [orderData.id, orderData.userId, JSON.stringify(orderData.items), orderData.status, orderData.totalAmount]
     );
     testOrder = rows[0];
   });
-  
+
   // Teardown: Clean up database after all tests
   afterAll(async () => {
     // Clean up existing test data, respecting foreign key constraints
@@ -89,17 +89,17 @@ describe('Order Service API', () => {
     });
 
     it('should return 401 if x-user-id header is missing', async () => {
-        const newOrder = {
-            items: [{ product: 'New Product', quantity: 2 }],
-            totalAmount: 200,
-        };
-  
-        const res = await request(server)
-          .post('/')
-          .send(newOrder);
-  
-        expect(res.statusCode).toEqual(401);
-      });
+      const newOrder = {
+        items: [{ product: 'New Product', quantity: 2 }],
+        totalAmount: 200,
+      };
+
+      const res = await request(server)
+        .post('/')
+        .send(newOrder);
+
+      expect(res.statusCode).toEqual(401);
+    });
   });
 
   describe('GET /', () => {
@@ -149,29 +149,29 @@ describe('Order Service API', () => {
     });
 
     it('should return 403 if trying to update another user\'s order', async () => {
-        const res = await request(server)
-          .patch(`/${testOrder.id}`)
-          .set('x-user-id', otherUserId)
-          .send({ status: 'in_progress' });
-  
-        expect(res.statusCode).toEqual(403);
-      });
+      const res = await request(server)
+        .patch(`/${testOrder.id}`)
+        .set('x-user-id', otherUserId)
+        .send({ status: 'in_progress' });
+
+      expect(res.statusCode).toEqual(403);
+    });
   });
 
   describe('DELETE /:id', () => {
     it('should cancel an order for the owner', async () => {
-        const newOrderData = {
-            id: uuidv4(),
-            userId: testUserId,
-            items: [{ product: 'To Be Cancelled', quantity: 1 }],
-            status: 'created',
-            totalAmount: 50,
-          };
-          const { rows } = await testDb.query(
-              'INSERT INTO orders (id, "userId", items, status, "totalAmount") VALUES ($1, $2, $3, $4, $5) RETURNING *',
-              [newOrderData.id, newOrderData.userId, JSON.stringify(newOrderData.items), newOrderData.status, newOrderData.totalAmount]
-          );
-        const orderToCancel = rows[0];
+      const newOrderData = {
+        id: uuidv4(),
+        userId: testUserId,
+        items: [{ product: 'To Be Cancelled', quantity: 1 }],
+        status: 'created',
+        totalAmount: 50,
+      };
+      const { rows } = await testDb.query(
+        'INSERT INTO orders (id, "userId", items, status, "totalAmount") VALUES ($1, $2, $3, $4, $5) RETURNING *',
+        [newOrderData.id, newOrderData.userId, JSON.stringify(newOrderData.items), newOrderData.status, newOrderData.totalAmount]
+      );
+      const orderToCancel = rows[0];
 
       const res = await request(server)
         .delete(`/${orderToCancel.id}`)
@@ -183,11 +183,11 @@ describe('Order Service API', () => {
     });
 
     it('should return 403 if trying to cancel another user\'s order', async () => {
-        const res = await request(server)
-          .delete(`/${testOrder.id}`)
-          .set('x-user-id', otherUserId);
-  
-        expect(res.statusCode).toEqual(403);
-      });
+      const res = await request(server)
+        .delete(`/${testOrder.id}`)
+        .set('x-user-id', otherUserId);
+
+      expect(res.statusCode).toEqual(403);
+    });
   });
 });

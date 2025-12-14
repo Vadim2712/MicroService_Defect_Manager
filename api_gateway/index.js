@@ -88,8 +88,8 @@ const jwtAuthMiddleware = (req, res, next) => {
 app.use('/v1', jwtAuthMiddleware); // Применяем middleware ко всем маршрутам /v1, кроме исключений
 
 // --- Проксирование сервисов ---
-const USERS_SERVICE_URL = process.env.USERS_SERVICE_URL || 'http://localhost:8001'; // Порт service_users
-const ORDERS_SERVICE_URL = process.env.ORDERS_SERVICE_URL || 'http://localhost:8002'; // Порт service_orders
+const USERS_SERVICE_URL = process.env.USERS_SERVICE_URL || 'http://service_users:8001'; // Порт service_users
+const ORDERS_SERVICE_URL = process.env.ORDERS_SERVICE_URL || 'http://service_orders:8002'; // Порт service_orders
 
 app.use('/v1/users', createProxyMiddleware({
     target: USERS_SERVICE_URL,

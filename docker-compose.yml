@@ -1,5 +1,3 @@
-version: '3.8'
-
 networks:
   microservices_network:
     driver: bridge
@@ -13,7 +11,7 @@ services:
     environment:
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=servicedb
+      - POSTGRES_DB=${DB_NAME}
     ports:
       - "${DB_PORT}:${DB_PORT}"
     networks:

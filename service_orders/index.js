@@ -53,7 +53,7 @@ const createApp = (db = defaultDb) => {
         req.log.info({ body: req.body }, 'Запрос на создание заказа');
         const validation = createOrderSchema.safeParse(req.body);
         if (!validation.success) {
-            const errorMessage = validation.error.errors.map(e => e.message).join(', ');
+            const errorMessage = validation.error.issues.map(e => e.message).join(', ');
             return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: errorMessage } });
         }
 
@@ -146,7 +146,7 @@ const createApp = (db = defaultDb) => {
         req.log.info({ orderId: req.params.id, body: req.body }, 'Запрос на обновление статуса заказа');
         const validation = updateOrderStatusSchema.safeParse(req.body);
         if (!validation.success) {
-            const errorMessage = validation.error.errors.map(e => e.message).join(', ');
+            const errorMessage = validation.error.issues.map(e => e.message).join(', ');
             return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: errorMessage } });
         }
 
